@@ -24,6 +24,7 @@ dependencies {
     implementation("org.apache.lucene.morphology:english:1.1")
     implementation("org.apache.lucene.morphology:russian:1.1")
     implementation("org.apache.lucene.morphology:morph:1.1")
+    implementation("com.bpodgursky:jbool_expressions:1.23")
 
     testImplementation(kotlin("test-junit"))
 }
