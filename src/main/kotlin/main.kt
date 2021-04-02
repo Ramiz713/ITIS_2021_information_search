@@ -1,6 +1,6 @@
 fun main() {
     val url = "https://habr.com/ru/"
-    //task1(url)
+//    task1(url)
 //    task2()
     val map = mapOf(
         "A" to "мобильный",
@@ -8,9 +8,13 @@ fun main() {
         "C" to "программист",
         "D" to "Android",
         "F" to "IOS",
-        )
-    val expression = "A & (B | C) & !D"
-//    val expression = "F"
-//    val expression = "!F"
-    task3(expression, map)
+    )
+    val expression = "A & (B | C) & D"
+//    task3(expression, map)
+    val termsWeight = task4(true)
+    val query = "вакансии android разработчик kotlin"
+//    val query = "хочу стать разработчиком java"
+//    val query = "коронавирус в России статистика"
+//    val query = "бик зур самокат"
+    task5(termsWeight, query)
 }

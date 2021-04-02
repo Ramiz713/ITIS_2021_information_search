@@ -1,7 +1,16 @@
 import com.bpodgursky.jbool_expressions.*
 import com.bpodgursky.jbool_expressions.parsers.ExprParser
 import com.bpodgursky.jbool_expressions.rules.RuleSet
+import com.google.gson.Gson
 import java.io.File
+import java.io.FileOutputStream
+
+data class InvertedIndex(val term: String, val locations: MutableList<Location>)
+
+data class Location(val fileName: String, val lineIndex: Int) {
+    override fun toString() = "{$fileName, line index $lineIndex}"
+}
+
 
 val invertedIndex = mutableMapOf<String, MutableList<Location>>()
 lateinit var variables: Map<String, String>
@@ -10,18 +19,23 @@ lateinit var locations: Set<String>
 fun task3(expression: String, map: Map<String, String>) {
     val files = File("outputTask2").listFiles()
     files?.forEach { indexFile(it) }
+    val gson = Gson()
+    val outputDirectory = File("outputTask3").apply {
+        mkdirs()
+        listFiles()?.forEach { it.deleteRecursively() }
+    }
+    val file = File(outputDirectory, "inverted_index.txt").apply { createNewFile() }
+    FileOutputStream(file, true).bufferedWriter().use { output ->
+        val invertedIndexList = invertedIndex.map { InvertedIndex(it.key, it.value) }
+        output.appendLine(gson.toJson(invertedIndexList))
+    }
     locations = invertedIndex.values.flatten().map { it.fileName }.toSet()
     variables = map
     val expr = ExprParser.parse(expression)
     val simplified = RuleSet.simplify(expr)
     val set = iterateExpression(simplified)
     set.forEach { println(it) }
-    println(set.count())
-}
-
-
-data class Location(val fileName: String, val lineIndex: Int) {
-    override fun toString() = "{$fileName, line index $lineIndex}"
+    println(set.size)
 }
 
 fun iterateExpression(expression: Expression<String>): Set<String> {
