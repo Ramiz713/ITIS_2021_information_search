@@ -21,24 +21,28 @@ fun task5(termsWeight: TermsWeight, query: String) {
     invertedIndexList = gson.fromJson(invertedIndexFile.readText(), itemInvertedIndexType)
     val documents = File("outputTask2").listFiles()
     val lemmas = RussianAnalyzer().lemmatizeTokens(query)
-    val queryVector = lemmas.map { term ->
+    val lemmasIndexes =
+        lemmas.map { term -> invertedIndexList.indexOfFirst { it.term == term } }
+    val newWords = lemmasIndexes.count { it == -1 }
+    val queryVector = DoubleArray(newWords + invertedIndexList.size)
+    lemmas.forEach { term ->
         val termIndex = invertedIndexList.indexOfFirst { it.term == term }
-        val tf = lemmas.count { it == term } / lemmas.size.toDouble()
-        val idf = termsWeight.idfArray.getOrNull(termIndex) ?: 0.0
-        val tfIdf = tf * idf
-        tfIdf
-    }.toDoubleArray()
+        if (termIndex != -1) {
+            val tf = lemmas.count { it == term } / lemmas.size.toDouble()
+            val idf = termsWeight.idfArray[termIndex]
+            queryVector[termIndex] = tf * idf
+            println("tf-idf of $term = ${tf * idf}")
+        }
+    }
     if (queryVector.all { it == 0.0 }) {
         println("По запросу \"$query\" ничего не найдено.")
         return
     }
-    val docVector = Array(documents.size) { DoubleArray(lemmas.size) }
-    lemmas.forEachIndexed { lemmaIndex, term ->
-        val termIndex = invertedIndexList.indexOfFirst { it.term == term }
-        (termsWeight.tfIdfMatrix.getOrNull(termIndex) ?: DoubleArray(100))
-            .forEachIndexed { docIndex, d ->
-                docVector[docIndex][lemmaIndex] = d
-            }
+    val docVector = Array(documents.size) { DoubleArray(invertedIndexList.size + newWords) }
+    documents.forEachIndexed { docIndex, file ->
+        invertedIndexList.forEachIndexed { termIndex, invertedIndex ->
+            docVector[docIndex][termIndex] = termsWeight.tfIdfMatrix[termIndex][docIndex]
+        }
     }
     val df = DecimalFormat("#.#####")
     df.roundingMode = RoundingMode.CEILING

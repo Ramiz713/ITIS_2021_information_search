@@ -11,8 +11,8 @@ fun main() {
     )
     val expression = "A & (B | C) & D"
 //    task3(expression, map)
-    val termsWeight = task4(true)
-    val query = "вакансии android разработчик kotlin"
+    val termsWeight = task4()
+    val query = "вакансии android разработчик"
 //    val query = "хочу стать разработчиком java"
 //    val query = "коронавирус в России статистика"
 //    val query = "бик зур самокат"

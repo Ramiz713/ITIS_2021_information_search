@@ -39,23 +39,22 @@ fun task4(withFileAppend: Boolean = false): TermsWeight {
                 tfMatrix[termIndex][docIndex] * idfArray[termIndex]
         }
     }
-    val outputDirectory = File("outputTask4").apply {
-        mkdirs()
-        listFiles()?.forEach { it.deleteRecursively() }
-    }
     if (withFileAppend) {
-        saveResultInFiles(outputDirectory, tfMatrix, idfArray, tfIdfMatrix, documents)
+        saveResultInFiles(tfMatrix, idfArray, tfIdfMatrix, documents)
     }
     return TermsWeight(idfArray, tfIdfMatrix)
 }
 
 fun saveResultInFiles(
-    outputDirectory: File,
     tfMatrix: Array<DoubleArray>,
     idfArray: DoubleArray,
     tfIdfMatrix: Array<DoubleArray>,
     documents: List<Pair<String, List<String>>>
 ) {
+    val outputDirectory = File("outputTask4").apply {
+        mkdirs()
+        listFiles()?.forEach { it.deleteRecursively() }
+    }
     val df = DecimalFormat("#.#####")
     df.roundingMode = RoundingMode.CEILING
     val tfFile = File(outputDirectory, "tfTable.txt")
