@@ -23,24 +23,45 @@ fun task5(termsWeight: TermsWeight, query: String) {
     val lemmas = RussianAnalyzer().lemmatizeTokens(query)
     val lemmasIndexes =
         lemmas.map { term -> invertedIndexList.indexOfFirst { it.term == term } }
-    val newWords = lemmasIndexes.count { it == -1 }
-    val queryVector = DoubleArray(newWords + invertedIndexList.size)
-    lemmas.forEach { term ->
-        val termIndex = invertedIndexList.indexOfFirst { it.term == term }
-        if (termIndex != -1) {
-            val tf = lemmas.count { it == term } / lemmas.size.toDouble()
-            val idf = termsWeight.idfArray[termIndex]
-            queryVector[termIndex] = tf * idf
-            println("tf-idf of $term = ${tf * idf}")
-        }
+            .filter { it != -1 }
+//    v1 - вектор выражение не дополняется до документа, а векторы документов сокращаются до вектора выражения
+//    val queryVector = lemmas.map { term ->
+//        val termIndex = invertedIndexList.indexOfFirst { it.term == term }
+//        val tf = lemmas.count { it == term } / lemmas.size.toDouble()
+//        val idf = termsWeight.idfArray.getOrNull(termIndex) ?: 0.0
+//        val tfIdf = tf * idf
+//        println("tf-idf of $term = $tfIdf")
+//        tfIdf
+//    }.toDoubleArray()
+//    if (queryVector.all { it == 0.0 }) {
+//        println("По запросу \"$query\" ничего не найдено.")
+//        return
+//    }
+//    val docVector = Array(documents.size) { DoubleArray(lemmas.size) }
+//    lemmas.forEachIndexed { lemmaIndex, term ->
+//        val termIndex = invertedIndexList.indexOfFirst { it.term == term }
+//        (termsWeight.tfIdfMatrix.getOrNull(termIndex) ?: DoubleArray(100))
+//            .forEachIndexed { docIndex, d ->
+//                docVector[docIndex][lemmaIndex] = d
+//            }
+//    }
+
+//  v2 - вектор выражение дополняется до размеров документа
+    val queryVector = DoubleArray(invertedIndexList.size)
+    lemmasIndexes.forEach { termIndex ->
+        val term = invertedIndexList[termIndex].term
+        val tf = lemmas.count { it == term } / lemmas.size.toDouble()
+        val idf = termsWeight.idfArray[termIndex]
+        queryVector[termIndex] = tf * idf
+        println("tf-idf of $term = ${tf * idf}")
     }
     if (queryVector.all { it == 0.0 }) {
         println("По запросу \"$query\" ничего не найдено.")
         return
     }
-    val docVector = Array(documents.size) { DoubleArray(invertedIndexList.size + newWords) }
-    documents.forEachIndexed { docIndex, file ->
-        invertedIndexList.forEachIndexed { termIndex, invertedIndex ->
+    val docVector = Array(documents.size) { DoubleArray(invertedIndexList.size) }
+    documents?.forEachIndexed { docIndex, _ ->
+        invertedIndexList.forEachIndexed { termIndex, _ ->
             docVector[docIndex][termIndex] = termsWeight.tfIdfMatrix[termIndex][docIndex]
         }
     }
@@ -51,9 +72,13 @@ fun task5(termsWeight: TermsWeight, query: String) {
     docVector
         .mapIndexed { index, doubles -> documents[index].name to doubles }
         .filter { !it.second.all { d -> d == 0.0 } }
-        .map { it.first to cosineSimilarity(it.second, queryVector) }
+        .map { Triple(it.first, cosineSimilarity(it.second, queryVector), it.second.count { d -> d == 0.0 }) }
         .sortedByDescending { it.second }
-        .forEach { println("${it.first}: ${df.format(it.second)}") }
+        .forEach { docItem ->
+            val count = lemmasIndexes.map { index -> invertedIndexList[index] }
+                .joinToString { item -> "${item.term} - ${item.locations.count { it.fileName == docItem.first }}" }
+            println("${docItem.first}\ncosine similarity: ${df.format(docItem.second)}\nzeros count:${docItem.third}\n$count\n")
+        }
 }
 
 fun cosineSimilarity(vectorA: DoubleArray, vectorB: DoubleArray): Double {
